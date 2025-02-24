@@ -1,0 +1,29 @@
+[nat]
+89.169.156.213
+
+[nat:vars]
+ansible_ssh_common_args='-o StrictHostKeyChecking=accept-new'
+
+[reverse_proxy]
+89.169.150.32
+
+[reverse_proxy:vars]
+ansible_ssh_common_args='-o StrictHostKeyChecking=accept-new'
+
+[clickhouse]
+192.168.42.4
+
+[clickhouse:vars]
+ansible_ssh_common_args='-o StrictHostKeyChecking=accept-new -o ProxyCommand="ssh -o StrictHostKeyChecking=accept-new -W %h:%p -q fatman@89.169.156.213"'
+clickhouse_http_port=8123
+clickhouse_tcp_port=9000
+
+[compute]
+192.168.42.34
+192.168.42.19
+
+[compute:vars]
+ansible_ssh_common_args='-o StrictHostKeyChecking=accept-new -o ProxyCommand="ssh -o StrictHostKeyChecking=accept-new -W %h:%p -q fatman@89.169.156.213"'
+clickhouse='192.168.42.4'
+clickhouse_http_port=8123
+clickhouse_tcp_port=9000

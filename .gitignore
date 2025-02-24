@@ -1,0 +1,9 @@
+.terraform/
+terraform.tfstate
+terraform.tfvars
+test_connection.py
+.terraform.lock.hcl
+terraform.tfstate.backup
+main.tf
+.DS_Store
+cloud_config.yaml

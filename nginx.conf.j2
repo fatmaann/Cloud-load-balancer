@@ -1,0 +1,13 @@
+upstream compute {
+    {%- for line in groups['compute'] %}
+    server {{ line -}}:8080;
+    {% endfor %}
+}
+
+server {
+    listen 80;
+
+    location / {
+        proxy_pass http://compute;
+    }
+}

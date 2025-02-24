@@ -1,0 +1,51 @@
+---
+- hosts: reverse_proxy
+  tasks:
+    - name: Debug user ID
+      debug:
+        msg: "Ansible connected with {{ ansible_user }}"
+    - name: Hello remote
+      shell: "echo hello $(hostname)!"
+      register: echo_remote
+    - name: Hello local
+      local_action:
+        module: shell
+        _raw_params: "echo hello $(hostname)!"
+      register: echo_local
+    - name: Debug hello remote
+      debug:
+        msg: "{{ echo_remote.stdout }}"
+    - name: Debug hello local
+      debug:
+        msg: "{{ echo_local.stdout }}"
+    - name: Update apt cache and install Nginx
+      apt:
+        name: nginx
+        state: latest
+        update_cache: yes
+      become: yes
+      become_method: sudo
+    - name: Apply Nginx template
+      template:
+        src: nginx.conf.j2
+        dest: /etc/nginx/sites-available/default
+      become: yes
+      become_method: sudo
+      notify: Restart Nginx
+
+    - name: Enable new site
+      file:
+        src: /etc/nginx/sites-available/default
+        dest: /etc/nginx/sites-enabled/default
+        state: link
+      become: yes
+      become_method: sudo
+      notify: Restart Nginx
+
+  handlers:
+    - name: Restart Nginx
+      service:
+        name: nginx
+        state: restarted
+      become: yes
+      become_method: sudo

@@ -1,0 +1,68 @@
+- hosts: clickhouse
+  tasks:
+    - name: Install required packages
+      apt:
+        name:
+          - docker.io
+          - docker-compose
+        state: present
+      become: yes
+      
+    - name: Create the volume directory
+      file:
+        path: "{{ ansible_env.HOME }}/logbroker_clickhouse_database"
+        state: directory
+        mode: '0755'
+      become: yes
+      
+    - name: Run ClickHouse container if not exists
+      docker_container:
+        name: clickhouse-server
+        image: yandex/clickhouse-server
+        ports:
+          - "8123:8123"
+        volumes:
+          - "{{ ansible_env.HOME }}/logbroker_clickhouse_database:/var/lib/clickhouse"
+        ulimits:
+          - nofile:262144:262144
+        detach: true
+        state: started
+        restart_policy: unless-stopped
+      become: yes
+      register: clickhouse_container
+
+    - name: Wait for ClickHouse to be healthy
+      shell: |
+        docker exec clickhouse-server clickhouse-client --host 0.0.0.0 --query "SELECT 1"
+      become: yes
+      register: clickhouse_health_check
+      retries: 10
+      delay: 5
+      until: clickhouse_health_check.rc == 0
+      ignore_errors: true
+
+    - name: Fail if ClickHouse is not healthy after waiting
+      fail:
+        msg: "ClickHouse is not healthy after waiting!"
+      when: clickhouse_health_check.rc != 0
+
+    - name: Check if ClickHouse container is running
+      docker_container_info:
+        name: clickhouse-server
+      register: container_info
+      become: yes
+
+    - name: Fail if container is not running
+      fail:
+        msg: "ClickHouse container is not running!"
+      when: not container_info.container.State.Running
+
+    - name: Print container status
+      debug:
+        msg: "ClickHouse container is running (status: {{ container_info.container.State.Status }})"
+      when: container_info.container.State.Running
+
+    - name: Create table in ClickHouse
+      shell: |
+        docker exec clickhouse-server clickhouse-client --host 0.0.0.0 -q 'CREATE TABLE IF NOT EXISTS default.kek (a Int32, b String) ENGINE = MergeTree() PRIMARY KEY a ORDER BY a;'
+      become: yes

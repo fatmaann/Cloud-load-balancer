@@ -1,0 +1,30 @@
+[nat]
+{{ external_ip_nat.value }}
+
+[nat:vars]
+ansible_ssh_common_args='-o StrictHostKeyChecking=accept-new'
+
+[reverse_proxy]
+{{ external_ip_reverse_proxy.value }}
+
+[reverse_proxy:vars]
+ansible_ssh_common_args='-o StrictHostKeyChecking=accept-new'
+
+[clickhouse]
+{{ internal_ip_clickhouse.value }}
+
+[clickhouse:vars]
+ansible_ssh_common_args='-o StrictHostKeyChecking=accept-new -o ProxyCommand="ssh -o StrictHostKeyChecking=accept-new -W %h:%p -q fatman@{{ external_ip_nat.value }}"'
+clickhouse_http_port=8123
+clickhouse_tcp_port=9000
+
+[compute]
+{%- for line in internal_ip_compute.value %}
+{{ line -}}
+{% endfor %}
+
+[compute:vars]
+ansible_ssh_common_args='-o StrictHostKeyChecking=accept-new -o ProxyCommand="ssh -o StrictHostKeyChecking=accept-new -W %h:%p -q fatman@{{ external_ip_nat.value }}"'
+clickhouse='{{ internal_ip_clickhouse.value }}'
+clickhouse_http_port=8123
+clickhouse_tcp_port=9000

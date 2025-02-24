@@ -1,0 +1,15 @@
+[Unit]
+Description=Compute instance
+After=network.target
+
+[Service]
+User={{ ansible_user }}
+Group=www-data
+WorkingDirectory=/home/{{ ansible_user }}/compute
+Environment="PATH=/home/{{ ansible_user }}/compute/venv/bin"
+Environment="CLICKHOUSE_HOST={{ clickhouse }}"
+Environment="CLICKHOUSE_PORT={{ clickhouse_http_port }}"
+ExecStart=/home/{{ ansible_user }}/compute/venv/bin/python main.py
+
+[Install]
+WantedBy=multi-user.target
